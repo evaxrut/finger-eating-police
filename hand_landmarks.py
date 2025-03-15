@@ -1,7 +1,7 @@
 from mediapipe import solutions
 import numpy as np
 import cv2
-from constants import MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS
+from constants import MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS, PADDING
 from mediapipe.framework.formats import landmark_pb2
 
 
@@ -59,9 +59,9 @@ class HandLandmarksOnImage:
         if not hand_landmarks:
             return False
 
-        h, w = image_shape[:2] 
+        h, w = image_shape[:2]
 
-        finger_tips = [2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20]  # Thumb, Index, Middle, Ring, Pinky
+        finger_tips = [2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20]
 
         x_min, y_min, x_max, y_max = mouth_box
 
@@ -69,7 +69,7 @@ class HandLandmarksOnImage:
             for tip in finger_tips:
                 x, y = int(hand[tip].x * w), int(hand[tip].y * h)
 
-                if x_min <= x <= x_max and y_min <= y <= y_max:
-                    return True  
+                if x_min - PADDING <= x  <= x_max + PADDING and y_min - PADDING <= y <= y_max + PADDING:
+                    return True
 
-        return False 
+        return False

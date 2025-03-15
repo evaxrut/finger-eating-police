@@ -3,9 +3,9 @@ from mediapipe.tasks.python import vision
 import cv2
 from hand_landmarks import HandLandmarksOnImage
 from face_landmarks import FaceLandmarksOnImage
-from constants import HAND_MODEL_PATH, FACE_MODEL_PATH
-import pygame
+from constants import HAND_MODEL_PATH, FACE_MODEL_PATH, PADDING
 import numpy as np
+from handle_chewing import handle_chewing, stop_alarm
 
 
 BaseOptions = mp.tasks.BaseOptions
@@ -15,22 +15,6 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 FaceLandmarker = mp.tasks.vision.FaceLandmarker
 FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
 
-pygame.mixer.init()
-alarm_playing = False 
-
-def handle_chewing():
-    global alarm_playing
-    print("Chewing detected!")
-    if not alarm_playing:
-        pygame.mixer.music.load("alarm.wav")
-        pygame.mixer.music.play(-1)
-        alarm_playing = True 
-
-def stop_alarm():
-    global alarm_playing
-    if alarm_playing:
-        pygame.mixer.music.stop()
-        alarm_playing = False 
 
 def main():
     hand_options = HandLandmarkerOptions(
@@ -72,25 +56,33 @@ def main():
 
         if mouth_box:
             x_min, y_min, x_max, y_max = mouth_box
-            cv2.rectangle(drawn, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-            
+            cv2.rectangle(
+                drawn,
+                (x_min - PADDING, y_min - PADDING),
+                (x_max + PADDING, y_max + PADDING),
+                (0, 255, 0),
+                2,
+            )
+
             # Check if fingers are inside the mouth
-            is_chewing = hands.check_if_chewing(mouth_box, hand_detection.hand_landmarks, frame.shape)
+            is_chewing = hands.check_if_chewing(
+                mouth_box, hand_detection.hand_landmarks, frame.shape
+            )
 
             if is_chewing:
                 handle_chewing()
-                
-                # Apply semi-transparent red overlay
+
+                # Make frame red
                 overlay = drawn.copy()
                 red_tint = np.full(overlay.shape, (0, 0, 255), dtype=np.uint8)
                 cv2.addWeighted(red_tint, 0.3, overlay, 0.7, 0, overlay)
-                drawn = overlay  # Update frame to show red tint
+                drawn = overlay
             else:
-                stop_alarm() 
-
+                stop_alarm()
 
         cv2.imshow("cam", drawn)
 
+        # (Q) to quit
         key = cv2.waitKey(1)
         if key & 0xFF == ord("q"):
             break
